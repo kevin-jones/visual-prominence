@@ -31,6 +31,7 @@ function highlightLargestElementIn(parentElement, depth = 1, parentArea = Infini
     highlightLargestElementIn(largestElement.element, depth + 1, largestElement.area);
   } else {
     parentElement.style.outline = '3px solid rgb(255, 0, 0)';
+    parentElement.style.backgroundColor = 'yellow';
   }
 }
 
