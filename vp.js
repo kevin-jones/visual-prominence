@@ -1,5 +1,12 @@
 const SCREEN_AREA_THRESHOLD = window.innerWidth * window.innerHeight * 0.5;
 const MIN_SIZE = 30 * 30;
+
+let config = {
+  SIZE_WEIGHT: 100,
+  FOREGROUND_CONTRAST_WEIGHT: 1,
+  BACKGROUND_CONTRAST_WEIGHT: 1,
+};
+
 let index = 1;
 
 function getRGB(colorStr) {
@@ -25,7 +32,7 @@ function getParentBackground(el) {
   return [255, 255, 255, 1]; // default to white if no parent background found
 }
 
-function highlightLargestElementIn(parentElement, depth = 1, parentArea = Infinity, parentColor = [255, 255, 255]) {
+function highlightLargestElementIn(parentElement, depth = 1, parentArea = Infinity) {
   const allElements = [...parentElement.querySelectorAll('*')];
   const largestElement = allElements.reduce((acc, el) => {
     const rect = el.getBoundingClientRect();
@@ -38,14 +45,16 @@ function highlightLargestElementIn(parentElement, depth = 1, parentArea = Infini
     const parentBg = getParentBackground(el);
     const elColor = getRGB(computedStyle.color);
     const bgColor = getRGB(computedStyle.backgroundColor);
-    const contrast = getContrast(elColor, parentBg) + getContrast(bgColor, parentBg);
+    const fgContrast = getContrast(elColor, parentBg);
+    const bgContrast = getContrast(bgColor, parentBg);
+    const score = area / config.SIZE_WEIGHT + fgContrast * config.FOREGROUND_CONTRAST_WEIGHT + bgContrast * config.BACKGROUND_CONTRAST_WEIGHT;
 
-    if (isInViewport && area < SCREEN_AREA_THRESHOLD && area > MIN_SIZE && area < 0.8 * parentArea && (!acc.area || (contrast + area / 100) > (acc.contrast + acc.area / 100))) {
-      return { element: el, area, contrast };
+    if (isInViewport && area < SCREEN_AREA_THRESHOLD && area > MIN_SIZE && area < 0.8 * parentArea && (!acc.area || score > acc.score)) {
+      return { element: el, area, score };
     }
 
     return acc;
-  }, {element: null, area: 0, contrast: 0});
+  }, {element: null, area: 0, score: 0});
 
   if (largestElement.element) {
     largestElement.element.style.outline = `3px solid rgb(${Math.min(255, 50 * depth)}, ${200 - Math.min(190, 10 * depth)}, ${200 - Math.min(190, 10 * depth)})`;
