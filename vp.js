@@ -1,7 +1,7 @@
 const SCREEN_AREA_THRESHOLD = window.innerWidth * window.innerHeight * 0.5;
 const MIN_SIZE = 30 * 30;
 
-function highlightLargestElementIn(parentElement) {
+function highlightLargestElementIn(parentElement, depth = 1) {
   const allElements = [...parentElement.querySelectorAll('*')];
   const largestElement = allElements.reduce((acc, el) => {
     const rect = el.getBoundingClientRect();
@@ -27,8 +27,8 @@ function highlightLargestElementIn(parentElement) {
   if (largestElement.element) {
     console.log(`Total area (including margin): ${largestElement.area}px`);
     console.log(`Element: ${largestElement.element.tagName}, ID: ${largestElement.element.id}, Class(es): ${largestElement.element.className}`);
-    largestElement.element.style.outline = '3px solid red';
-    highlightLargestElementIn(largestElement.element);
+    largestElement.element.style.outline = `3px solid rgb(${Math.min(255, 50 * depth)}, 200, 200)`;
+    highlightLargestElementIn(largestElement.element, depth + 1);
   }
 }
 
