@@ -1,26 +1,35 @@
-function highlightLargestElements() {
-    var allElements = document.getElementsByTagName('*'); // get all elements
-    var largestElements = []; // array to store the largest elements
-    var maxArea = 0; // to keep track of the maximum area
+const SCREEN_AREA_THRESHOLD = window.innerWidth * window.innerHeight * 0.5;
+const MIN_SIZE = 30 * 30;
 
-    // iterate over all elements
-    for (var i = 0; i < allElements.length; i++) {
-        var element = allElements[i];
-        var rect = element.getBoundingClientRect(); // get element size and position
-        var area = rect.width * rect.height; // calculate area
+function highlightLargestElementIn(parentElement) {
+  const allElements = [...parentElement.querySelectorAll('*')];
+  const largestElement = allElements.reduce((acc, el) => {
+    const rect = el.getBoundingClientRect();
+    const computedStyle = getComputedStyle(el);
+    const totalWidth = rect.width + parseInt(computedStyle.marginLeft) + parseInt(computedStyle.marginRight);
+    const totalHeight = rect.height + parseInt(computedStyle.marginTop) + parseInt(computedStyle.marginBottom);
+    const area = totalWidth * totalHeight;
 
-        if (area > maxArea) {
-            largestElements = [element]; // new largest element(s)
-            maxArea = area; // update maximum area
-        } else if (area === maxArea) {
-            largestElements.push(element); // multiple largest elements
-        }
+    const isInViewport = (
+      rect.top >= 0 &&
+      rect.left >= 0 &&
+      rect.bottom <= window.innerHeight &&
+      rect.right <= window.innerWidth
+    );
+
+    if (isInViewport && area < SCREEN_AREA_THRESHOLD && area > MIN_SIZE && (!acc.area || area > acc.area)) {
+      return { element: el, area };
     }
 
-    // highlight largest elements
-    for (var i = 0; i < largestElements.length; i++) {
-        largestElements[i].style.outline = '3px solid red'; // adjust as needed
-    }
+    return acc;
+  }, {element: null, area: 0});
+
+  if (largestElement.element) {
+    console.log(`Total area (including margin): ${largestElement.area}px`);
+    console.log(`Element: ${largestElement.element.tagName}, ID: ${largestElement.element.id}, Class(es): ${largestElement.element.className}`);
+    largestElement.element.style.outline = '3px solid red';
+    highlightLargestElementIn(largestElement.element);
+  }
 }
 
-highlightLargestElements(); // call the function
+highlightLargestElementIn(document.body);
