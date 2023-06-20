@@ -2,8 +2,27 @@ const SCREEN_AREA_THRESHOLD = window.innerWidth * window.innerHeight * 0.5;
 const MIN_SIZE = 30 * 30;
 let index = 1;
 
+function getRGB(colorStr) {
+  if (colorStr.includes('rgba')) {
+    return colorStr.match(/\d+.?\d*/g).map(Number); // handles rgba colors with alpha
+  } else {
+    return colorStr.match(/\d+/g).map(Number); // handles rgb colors
+  }
+}
+
 function getContrast(rgb1, rgb2) {
-  return Math.abs(parseInt(rgb1[0]) - parseInt(rgb2[0])) + Math.abs(parseInt(rgb1[1]) - parseInt(rgb2[1])) + Math.abs(parseInt(rgb1[2]) - parseInt(rgb2[2]));
+  return Math.abs(rgb1[0] - rgb2[0]) + Math.abs(rgb1[1] - rgb2[1]) + Math.abs(rgb1[2] - rgb2[2]);
+}
+
+function getParentBackground(el) {
+  while (el) {
+    let bg = getRGB(getComputedStyle(el).backgroundColor);
+    if (bg[3] !== 0) {
+      return bg;
+    }
+    el = el.parentElement;
+  }
+  return [255, 255, 255, 1]; // default to white if no parent background found
 }
 
 function highlightLargestElementIn(parentElement, depth = 1, parentArea = Infinity, parentColor = [255, 255, 255]) {
@@ -16,9 +35,10 @@ function highlightLargestElementIn(parentElement, depth = 1, parentArea = Infini
     const area = totalWidth * totalHeight;
     const isInViewport = rect.top >= 0 && rect.left >= 0 && rect.bottom <= window.innerHeight && rect.right <= window.innerWidth;
 
-    const elColor = computedStyle.color.match(/\d+/g);
-    const bgColor = computedStyle.backgroundColor.match(/\d+/g);
-    const contrast = getContrast(elColor, parentColor) + getContrast(bgColor, parentColor);
+    const parentBg = getParentBackground(el);
+    const elColor = getRGB(computedStyle.color);
+    const bgColor = getRGB(computedStyle.backgroundColor);
+    const contrast = getContrast(elColor, parentBg) + getContrast(bgColor, parentBg);
 
     if (isInViewport && area < SCREEN_AREA_THRESHOLD && area > MIN_SIZE && area < 0.8 * parentArea && (!acc.area || (contrast + area / 100) > (acc.contrast + acc.area / 100))) {
       return { element: el, area, contrast };
@@ -35,7 +55,7 @@ function highlightLargestElementIn(parentElement, depth = 1, parentArea = Infini
     indexElement.style.backgroundColor = 'black';
     indexElement.style.position = 'absolute';
     largestElement.element.prepend(indexElement);
-    const bgColor = getComputedStyle(largestElement.element).backgroundColor.match(/\d+/g);
+    const bgColor = getRGB(getComputedStyle(largestElement.element).backgroundColor);
     highlightLargestElementIn(largestElement.element, depth + 1, largestElement.area, bgColor);
   } else {
     parentElement.style.outline = '3px solid rgb(255, 0, 0)';
